@@ -34,12 +34,12 @@ func TestNew(t *testing.T) {
 			args: &args{
 				email:  os.Getenv("MIGADU_ADMIN_EMAIL"),
 				apiKey: os.Getenv("MIGADU_API_KEY"),
-				domain: "example.com",
+				domain: os.Getenv("MIGADU_DOMAIN"),
 			},
 			want: &Client{
 				Email:      os.Getenv("MIGADU_ADMIN_EMAIL"),
 				APIKey:     os.Getenv("MIGADU_API_KEY"),
-				Domain:     "example.com",
+				Domain:     os.Getenv("MIGADU_DOMAIN"),
 				Timeout:    DefaultTimeout,
 				HTTPClient: http.DefaultClient,
 			},

@@ -28,7 +28,7 @@ func TestClient_ListAliases(t *testing.T) {
 			fields: fields{
 				email:  os.Getenv("MIGADU_ADMIN_EMAIL"),
 				apiKey: os.Getenv("MIGADU_API_KEY"),
-				domain: "example.com",
+				domain: os.Getenv("MIGADU_DOMAIN"),
 			},
 			args: args{
 				ctx: context.Background(),
