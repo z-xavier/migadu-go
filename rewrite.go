@@ -32,7 +32,7 @@ func (c *Client) ListRewrites(ctx context.Context) ([]*Rewrite, error) {
 
 	req, err := c.GetV1ReqBuilder().
 		SetMethod(http.MethodGet).
-		AddPath(rewritesPath).
+		AddPath(RewritesPath).
 		Build()
 	if err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ func (c *Client) GetRewrite(ctx context.Context, name string) (*Rewrite, error) 
 
 	req, err := c.GetV1ReqBuilder().
 		SetMethod(http.MethodGet).
-		AddRestfulPath(rewritesPath, name).
+		AddRestfulPath(RewritesPath, name).
 		Build()
 	if err != nil {
 		return nil, err
@@ -69,7 +69,7 @@ func (c *Client) NewRewrite(ctx context.Context, name string, localPartRule stri
 	rewriteJSON.convertDestinationsField()
 	req, err := c.GetV1ReqBuilder().
 		SetMethod(http.MethodPost).
-		AddPath(rewritesPath).
+		AddPath(RewritesPath).
 		SetHeaderContentTypeJson().
 		SetBodyJson(rewriteJSON).
 		Build()
@@ -86,7 +86,7 @@ func (c *Client) UpdateRewrite(ctx context.Context, name string, r *Rewrite) (*R
 	rewriteJSON.convertDestinationsField()
 	req, err := c.GetV1ReqBuilder().
 		SetMethod(http.MethodPut).
-		AddRestfulPath(rewritesPath, name).
+		AddRestfulPath(RewritesPath, name).
 		SetHeaderContentTypeJson().
 		SetBodyJson(rewriteJSON).
 		Build()
@@ -101,7 +101,7 @@ func (c *Client) UpdateRewrite(ctx context.Context, name string, r *Rewrite) (*R
 func (c *Client) DeleteRewrite(ctx context.Context, name string) error {
 	req, err := c.GetV1ReqBuilder().
 		SetMethod(http.MethodDelete).
-		AddRestfulPath(rewritesPath, name).
+		AddRestfulPath(RewritesPath, name).
 		Build()
 	if err != nil {
 		return err

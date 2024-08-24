@@ -15,11 +15,11 @@ const (
 	V1Path         = "/v1"
 	DefaultTimeout = 30 * time.Second
 
-	domainsPath    = "domains"
-	aliasesPath    = "aliases"
-	rewritesPath   = "rewrites"
-	identitiesPath = "identities"
-	mailboxesPath  = "mailboxes"
+	DomainsPath    = "domains"
+	AliasesPath    = "aliases"
+	RewritesPath   = "rewrites"
+	IdentitiesPath = "identities"
+	MailboxesPath  = "mailboxes"
 )
 
 // httpClient implements the most basic function of http.Client.
@@ -40,7 +40,7 @@ func (c *Client) GetV1ReqBuilder() *HttpReqBuilder {
 	return NewReqBuilder().
 		SetHost(Host).
 		AddPath(V1Path).
-		AddRestfulPath(domainsPath, c.Domain).
+		AddRestfulPath(DomainsPath, c.Domain).
 		SetBasicAuth(c.Email, c.APIKey)
 }
 
@@ -50,7 +50,7 @@ func (c *Client) GetV1ReqBuilder() *HttpReqBuilder {
 func (c *Client) testAuth() error {
 	req, err := c.GetV1ReqBuilder().
 		SetMethod(http.MethodGet).
-		AddPath(mailboxesPath).
+		AddPath(MailboxesPath).
 		Build()
 	if err != nil {
 		return err

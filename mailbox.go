@@ -47,7 +47,7 @@ type Mailbox struct {
 func (c *Client) ListMailboxes(ctx context.Context) ([]*Mailbox, error) {
 	req, err := c.GetV1ReqBuilder().
 		SetMethod(http.MethodGet).
-		AddPath(mailboxesPath).
+		AddPath(MailboxesPath).
 		Build()
 	if err != nil {
 		return nil, err
@@ -67,7 +67,7 @@ func (c *Client) ListMailboxes(ctx context.Context) ([]*Mailbox, error) {
 func (c *Client) GetMailbox(ctx context.Context, localPart string) (*Mailbox, error) {
 	req, err := c.GetV1ReqBuilder().
 		SetMethod(http.MethodGet).
-		AddRestfulPath(mailboxesPath, localPart).
+		AddRestfulPath(MailboxesPath, localPart).
 		Build()
 	if err != nil {
 		return nil, err
@@ -89,7 +89,7 @@ func (c *Client) NewMailbox(ctx context.Context, localPart string, displayName s
 
 	req, err := c.GetV1ReqBuilder().
 		SetMethod(http.MethodPost).
-		AddPath(mailboxesPath).
+		AddPath(MailboxesPath).
 		SetHeaderContentTypeJson().
 		SetBodyJson(mailbox).
 		Build()
@@ -104,7 +104,7 @@ func (c *Client) NewMailbox(ctx context.Context, localPart string, displayName s
 func (c *Client) UpdateMailbox(ctx context.Context, localPart string, mb *Mailbox) (*Mailbox, error) {
 	req, err := c.GetV1ReqBuilder().
 		SetMethod(http.MethodPut).
-		AddRestfulPath(mailboxesPath, localPart).
+		AddRestfulPath(MailboxesPath, localPart).
 		SetHeaderContentTypeJson().
 		SetBodyJson(mb).
 		Build()
@@ -119,7 +119,7 @@ func (c *Client) UpdateMailbox(ctx context.Context, localPart string, mb *Mailbo
 func (c *Client) DeleteMailbox(ctx context.Context, localPart string) error {
 	req, err := c.GetV1ReqBuilder().
 		SetMethod(http.MethodDelete).
-		AddRestfulPath(mailboxesPath, localPart).
+		AddRestfulPath(MailboxesPath, localPart).
 		Build()
 	if err != nil {
 		return err

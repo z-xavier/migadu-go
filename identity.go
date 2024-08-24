@@ -27,8 +27,8 @@ type Identity struct {
 func (c *Client) ListIdentities(ctx context.Context, mailbox string) ([]*Identity, error) {
 	req, err := c.GetV1ReqBuilder().
 		SetMethod(http.MethodGet).
-		AddRestfulPath(mailboxesPath, mailbox).
-		AddPath(identitiesPath).
+		AddRestfulPath(MailboxesPath, mailbox).
+		AddPath(IdentitiesPath).
 		Build()
 	if err != nil {
 		return nil, err
@@ -48,8 +48,8 @@ func (c *Client) ListIdentities(ctx context.Context, mailbox string) ([]*Identit
 func (c *Client) GetIdentity(ctx context.Context, mailbox, localPart string) (*Identity, error) {
 	req, err := c.GetV1ReqBuilder().
 		SetMethod(http.MethodGet).
-		AddRestfulPath(mailboxesPath, mailbox).
-		AddRestfulPath(identitiesPath, localPart).
+		AddRestfulPath(MailboxesPath, mailbox).
+		AddRestfulPath(IdentitiesPath, localPart).
 		Build()
 	if err != nil {
 		return nil, err
@@ -64,8 +64,8 @@ func (c *Client) NewIdentity(ctx context.Context, mailbox, localPart, displayNam
 	identity := Identity{LocalPart: localPart, Name: displayName}
 	req, err := c.GetV1ReqBuilder().
 		SetMethod(http.MethodPost).
-		AddRestfulPath(mailboxesPath, mailbox).
-		AddRestfulPath(identitiesPath, localPart).
+		AddRestfulPath(MailboxesPath, mailbox).
+		AddRestfulPath(IdentitiesPath, localPart).
 		SetHeaderContentTypeJson().
 		SetBodyJson(identity).
 		Build()
@@ -80,8 +80,8 @@ func (c *Client) NewIdentity(ctx context.Context, mailbox, localPart, displayNam
 func (c *Client) UpdateIdentity(ctx context.Context, mailbox, localPart string, identity *Identity) (*Identity, error) {
 	req, err := c.GetV1ReqBuilder().
 		SetMethod(http.MethodPut).
-		AddRestfulPath(mailboxesPath, mailbox).
-		AddRestfulPath(identitiesPath, localPart).
+		AddRestfulPath(MailboxesPath, mailbox).
+		AddRestfulPath(IdentitiesPath, localPart).
 		SetHeaderContentTypeJson().
 		SetBodyJson(identity).
 		Build()
@@ -96,8 +96,8 @@ func (c *Client) UpdateIdentity(ctx context.Context, mailbox, localPart string, 
 func (c *Client) DeleteIdentity(ctx context.Context, mailbox, localPart string) error {
 	req, err := c.GetV1ReqBuilder().
 		SetMethod(http.MethodDelete).
-		AddRestfulPath(mailboxesPath, mailbox).
-		AddRestfulPath(identitiesPath, localPart).
+		AddRestfulPath(MailboxesPath, mailbox).
+		AddRestfulPath(IdentitiesPath, localPart).
 		Build()
 	if err != nil {
 		return err

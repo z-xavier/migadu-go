@@ -36,7 +36,7 @@ func (c *Client) ListAliases(ctx context.Context) ([]*Alias, error) {
 
 	req, err := c.GetV1ReqBuilder().
 		SetMethod(http.MethodGet).
-		AddPath(aliasesPath).
+		AddPath(AliasesPath).
 		Build()
 	if err != nil {
 		return nil, err
@@ -56,7 +56,7 @@ func (c *Client) ListAliases(ctx context.Context) ([]*Alias, error) {
 func (c *Client) GetAlias(ctx context.Context, localPart string) (*Alias, error) {
 	req, err := c.GetV1ReqBuilder().
 		SetMethod(http.MethodGet).
-		AddRestfulPath(aliasesPath, localPart).
+		AddRestfulPath(AliasesPath, localPart).
 		Build()
 	if err != nil {
 		return nil, err
@@ -72,7 +72,7 @@ func (c *Client) NewAlias(ctx context.Context, localPart string, destinations []
 	aliasJSON.convertDestinationsField()
 	req, err := c.GetV1ReqBuilder().
 		SetMethod(http.MethodPost).
-		AddPath(aliasesPath).
+		AddPath(AliasesPath).
 		SetHeaderContentTypeJson().
 		SetBodyJson(aliasJSON).
 		Build()
@@ -89,7 +89,7 @@ func (c *Client) UpdateAlias(ctx context.Context, localPart string, a *Alias) (*
 	aliasJSON.convertDestinationsField()
 	req, err := c.GetV1ReqBuilder().
 		SetMethod(http.MethodPut).
-		AddRestfulPath(aliasesPath, localPart).
+		AddRestfulPath(AliasesPath, localPart).
 		SetHeaderContentTypeJson().
 		SetBodyJson(aliasJSON).
 		Build()
@@ -104,7 +104,7 @@ func (c *Client) UpdateAlias(ctx context.Context, localPart string, a *Alias) (*
 func (c *Client) DeleteAlias(ctx context.Context, localPart string) error {
 	req, err := c.GetV1ReqBuilder().
 		SetMethod(http.MethodDelete).
-		AddRestfulPath(aliasesPath, localPart).
+		AddRestfulPath(AliasesPath, localPart).
 		Build()
 	if err != nil {
 		return err
