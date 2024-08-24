@@ -35,7 +35,7 @@ func (c *Client) ListIdentities(ctx context.Context, mailbox string) ([]*Identit
 	}
 
 	resp, err := DoRequest[struct {
-		Indentities []*Identity `json:"identities,omitempty,omitempty"`
+		Indentities []*Identity `json:"identities,omitempty"`
 	}](c, ctx, req)
 	if err != nil {
 		return nil, err

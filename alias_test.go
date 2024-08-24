@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestClient_ListAliases(t *testing.T) {
+func TestListAliases(t *testing.T) {
 	type fields struct {
 		email  string
 		apiKey string
