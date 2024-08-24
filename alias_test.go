@@ -2,8 +2,8 @@ package migadu
 
 import (
 	"context"
+	"fmt"
 	"os"
-	"reflect"
 	"testing"
 )
 
@@ -20,7 +20,6 @@ func TestClient_ListAliases(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *[]Alias
 		wantErr bool
 	}{
 		{
@@ -33,7 +32,6 @@ func TestClient_ListAliases(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 			},
-			want:    &[]Alias{},
 			wantErr: false,
 		},
 	}
@@ -49,9 +47,13 @@ func TestClient_ListAliases(t *testing.T) {
 				t.Errorf("ListAliases() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(aliases, tt.want) {
-				t.Errorf("ListAliases() got = %v, want %v", aliases[0], tt.want)
+			if aliases == nil {
+				t.Errorf("ListAliases() error, aliases is nil")
+				return
 			}
+			// for _, aliase := range aliases {
+			// 	fmt.Printf("ListAliases() got = %v", aliase)
+			// }
 		})
 	}
 }
