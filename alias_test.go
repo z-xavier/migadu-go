@@ -2,7 +2,6 @@ package migadu
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"testing"
 )
