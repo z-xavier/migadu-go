@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestNew(t *testing.T) {
+func TestClient_New(t *testing.T) {
 	type args struct {
 		email  string
 		apiKey string

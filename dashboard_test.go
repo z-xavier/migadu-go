@@ -2,11 +2,12 @@ package migadu
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 )
 
-func TestClient_ListAliases(t *testing.T) {
+func TestClient_GetDomains(t *testing.T) {
 	type fields struct {
 		email  string
 		apiKey string
@@ -22,7 +23,7 @@ func TestClient_ListAliases(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Test List Aliases",
+			name: "Test Get Domains",
 			fields: fields{
 				email:  os.Getenv("MIGADU_ADMIN_EMAIL"),
 				apiKey: os.Getenv("MIGADU_API_KEY"),
@@ -39,18 +40,12 @@ func TestClient_ListAliases(t *testing.T) {
 				t.Errorf("New() error = %v", err)
 				return
 			}
-			aliases, err := c.ListAliases(tt.args.ctx)
-			if err != nil != tt.wantErr {
-				t.Errorf("ListAliases() error = %v, wantErr %v", err, tt.wantErr)
+			domains, err := c.GetDomains(tt.args.ctx)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetDomains() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if aliases == nil {
-				t.Errorf("ListAliases() error, aliases is nil")
-				return
-			}
-			// for _, aliase := range aliases {
-			// 	fmt.Printf("ListAliases() got = %v", aliase)
-			// }
+			fmt.Printf("GetDomains() got = %v", domains)
 		})
 	}
 }

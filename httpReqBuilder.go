@@ -24,6 +24,7 @@ type HttpReqBuilder struct {
 	path      string
 	values    *url.Values
 	header    *http.Header
+	cookies   []*http.Cookie
 	body      io.Reader
 	basicAuth *basicAuth
 }
@@ -42,6 +43,7 @@ func (b *HttpReqBuilder) free() {
 	b.path = ""
 	b.values = nil
 	b.header = nil
+	b.cookies = nil
 	b.body = nil
 	b.basicAuth = nil
 	httpReqPool.Put(b)
@@ -53,7 +55,7 @@ func (b *HttpReqBuilder) SetMethod(method string) *HttpReqBuilder {
 }
 
 func (b *HttpReqBuilder) SetHost(host string) *HttpReqBuilder {
-	b.host += host
+	b.host += strings.TrimSuffix(host, "/")
 	return b
 }
 
@@ -108,6 +110,14 @@ func (b *HttpReqBuilder) SetBasicAuth(username, password string) *HttpReqBuilder
 	return b
 }
 
+func (b *HttpReqBuilder) SetCookies(cookie ...*http.Cookie) *HttpReqBuilder {
+	if b.cookies == nil {
+		b.cookies = make([]*http.Cookie, 0)
+	}
+	b.cookies = append(b.cookies, cookie...)
+	return b
+}
+
 func (b *HttpReqBuilder) SetBodyJson(body interface{}) *HttpReqBuilder {
 	jsonStr, err := json.Marshal(body)
 	if err != nil {
@@ -141,6 +151,12 @@ func (b *HttpReqBuilder) Build() (*http.Request, error) {
 	req, err := http.NewRequest(b.method, parse.String(), b.body)
 	if err != nil {
 		return nil, errors.Join(err, fmt.Errorf("error creating request"))
+	}
+
+	if b.cookies != nil {
+		for _, cookie := range b.cookies {
+			req.AddCookie(cookie)
+		}
 	}
 
 	if b.header != nil {

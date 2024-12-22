@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	Host           = "https://api.migadu.com"
-	V1Path         = "/v1"
+	APIHost        = "https://api.migadu.com"
+	V1Path         = "v1"
 	DefaultTimeout = 30 * time.Second
 
 	DomainsPath    = "domains"
@@ -32,13 +32,14 @@ type Client struct {
 	Email      string
 	APIKey     string
 	Domain     string
+	Cookies    []*http.Cookie
 	Timeout    time.Duration
 	HTTPClient httpClient
 }
 
 func (c *Client) GetV1ReqBuilder() *HttpReqBuilder {
 	return NewReqBuilder().
-		SetHost(Host).
+		SetHost(APIHost).
 		AddPath(V1Path).
 		AddRestfulPath(DomainsPath, c.Domain).
 		SetBasicAuth(c.Email, c.APIKey)
@@ -48,14 +49,7 @@ func (c *Client) GetV1ReqBuilder() *HttpReqBuilder {
 // It returns any error encountered.
 // https://www.migadu.com/api/#api-requests
 func (c *Client) testAuth() error {
-	req, err := c.GetV1ReqBuilder().
-		SetMethod(http.MethodGet).
-		AddPath(MailboxesPath).
-		Build()
-	if err != nil {
-		return err
-	}
-	if _, err = DoRequest[struct{}](c, context.Background(), req); err != nil {
+	if _, err := c.ListMailboxes(context.Background()); err != nil {
 		return err
 	}
 	return nil
