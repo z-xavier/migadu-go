@@ -1,7 +1,7 @@
 # Migadu API in Go
 
-[![GoDoc](https://img.shields.io/badge/pkg.go.dev-doc-blue)](http://pkg.go.dev/github.com/ZhangXavier/migadu-go)
-[![Go Report Card](https://goreportcard.com/badge/github.com/ZhangXavier/migadu-go)](https://goreportcard.com/report/github.com/ZhangXavier/migadu-go)
+[![GoDoc](https://img.shields.io/badge/pkg.go.dev-doc-blue)](http://pkg.go.dev/github.com/z-xavier/migadu-go)
+[![Go Report Card](https://goreportcard.com/badge/github.com/z-xavier/migadu-go)](https://goreportcard.com/report/github.com/z-xavier/migadu-go)
 
 `migadu-go` is a Go library for interfacing with the [Migadu API](https://www.migadu.com/api/).
 
@@ -10,7 +10,7 @@
 You need a working Go environment.
 
 ```shell
-go get github.com/ZhangXavier/migadu-go
+go get github.com/z-xavier/migadu-go
 ```
 
 ## Getting Started
@@ -21,7 +21,7 @@ Example:
 package main
 
 import (
-    "github.com/ZhangXavier/migadu-go"
+    "github.com/z-xavier/migadu-go"
 )
 
 client, err := migadu.New(os.Getenv("MIGADU_ADMIN_EMAIL"), os.Getenv("MIGADU_API_KEY"), "example.com")
