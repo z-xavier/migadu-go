@@ -20,9 +20,7 @@ Example:
 ```go
 package main
 
-import (
-    "github.com/z-xavier/migadu-go"
-)
+import "github.com/z-xavier/migadu-go"
 
 client, err := migadu.New(os.Getenv("MIGADU_ADMIN_EMAIL"), os.Getenv("MIGADU_API_KEY"), "example.com")
 
