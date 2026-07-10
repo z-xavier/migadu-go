@@ -1,7 +1,7 @@
 # Migadu API in Go
 
-[![GoDoc](https://img.shields.io/badge/pkg.go.dev-doc-blue)](http://pkg.go.dev/github.com/z-xavier/migadu-go)
-[![Go Report Card](https://goreportcard.com/badge/github.com/z-xavier/migadu-go)](https://goreportcard.com/report/github.com/z-xavier/migadu-go)
+[![Go Reference](https://pkg.go.dev/badge/github.com/z-xavier/migadu-go.svg)](https://pkg.go.dev/github.com/z-xavier/migadu-go)
+[![CI](https://github.com/z-xavier/migadu-go/actions/workflows/ci.yml/badge.svg)](https://github.com/z-xavier/migadu-go/actions/workflows/ci.yml)
 
 `migadu-go` is a Go library for interfacing with the [Migadu API](https://www.migadu.com/api/).
 
