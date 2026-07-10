@@ -3,22 +3,14 @@ package migadu
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
-	"sync"
 )
 
-var httpReqPool = sync.Pool{
-	New: func() interface{} {
-		return &HttpReqBuilder{}
-	},
-}
-
-type HttpReqBuilder struct {
+type httpReqBuilder struct {
 	method    string
 	host      string
 	path      string
@@ -27,49 +19,38 @@ type HttpReqBuilder struct {
 	cookies   []*http.Cookie
 	body      io.Reader
 	basicAuth *basicAuth
+	err       error
 }
 
 type basicAuth struct {
 	username, password string
 }
 
-func NewReqBuilder() *HttpReqBuilder {
-	return httpReqPool.Get().(*HttpReqBuilder)
+func newReqBuilder() *httpReqBuilder {
+	return &httpReqBuilder{}
 }
 
-func (b *HttpReqBuilder) free() {
-	b.method = ""
-	b.host = ""
-	b.path = ""
-	b.values = nil
-	b.header = nil
-	b.cookies = nil
-	b.body = nil
-	b.basicAuth = nil
-	httpReqPool.Put(b)
-}
-
-func (b *HttpReqBuilder) SetMethod(method string) *HttpReqBuilder {
+func (b *httpReqBuilder) SetMethod(method string) *httpReqBuilder {
 	b.method = method
 	return b
 }
 
-func (b *HttpReqBuilder) SetHost(host string) *HttpReqBuilder {
-	b.host += strings.TrimSuffix(host, "/")
+func (b *httpReqBuilder) SetHost(host string) *httpReqBuilder {
+	b.host = strings.TrimSuffix(host, "/")
 	return b
 }
 
-func (b *HttpReqBuilder) AddPath(path string) *HttpReqBuilder {
+func (b *httpReqBuilder) AddPath(path string) *httpReqBuilder {
 	b.path += fmt.Sprintf("/%s", url.PathEscape(strings.TrimSuffix(strings.TrimPrefix(path, "/"), "/")))
 	return b
 }
 
-func (b *HttpReqBuilder) AddRestfulPath(key, value string) *HttpReqBuilder {
+func (b *httpReqBuilder) AddRestfulPath(key, value string) *httpReqBuilder {
 	b.path += fmt.Sprintf("/%s/%s", url.PathEscape(key), url.PathEscape(value))
 	return b
 }
 
-func (b *HttpReqBuilder) AddValues(key, value string) *HttpReqBuilder {
+func (b *httpReqBuilder) AddValues(key, value string) *httpReqBuilder {
 	if b.values == nil {
 		b.values = &url.Values{}
 	}
@@ -77,7 +58,7 @@ func (b *HttpReqBuilder) AddValues(key, value string) *HttpReqBuilder {
 	return b
 }
 
-func (b *HttpReqBuilder) SetValues(key, value string) *HttpReqBuilder {
+func (b *httpReqBuilder) SetValues(key, value string) *httpReqBuilder {
 	if b.values == nil {
 		b.values = &url.Values{}
 	}
@@ -85,7 +66,7 @@ func (b *HttpReqBuilder) SetValues(key, value string) *HttpReqBuilder {
 	return b
 }
 
-func (b *HttpReqBuilder) AddHeader(key, value string) *HttpReqBuilder {
+func (b *httpReqBuilder) AddHeader(key, value string) *httpReqBuilder {
 	if b.header == nil {
 		b.header = &http.Header{}
 	}
@@ -93,11 +74,11 @@ func (b *HttpReqBuilder) AddHeader(key, value string) *HttpReqBuilder {
 	return b
 }
 
-func (b *HttpReqBuilder) SetHeaderContentTypeJson() *HttpReqBuilder {
+func (b *httpReqBuilder) SetHeaderContentTypeJson() *httpReqBuilder {
 	return b.SetHeader("Content-Type", "application/json")
 }
 
-func (b *HttpReqBuilder) SetHeader(key, value string) *HttpReqBuilder {
+func (b *httpReqBuilder) SetHeader(key, value string) *httpReqBuilder {
 	if b.header == nil {
 		b.header = &http.Header{}
 	}
@@ -105,12 +86,12 @@ func (b *HttpReqBuilder) SetHeader(key, value string) *HttpReqBuilder {
 	return b
 }
 
-func (b *HttpReqBuilder) SetBasicAuth(username, password string) *HttpReqBuilder {
+func (b *httpReqBuilder) SetBasicAuth(username, password string) *httpReqBuilder {
 	b.basicAuth = &basicAuth{username, password}
 	return b
 }
 
-func (b *HttpReqBuilder) SetCookies(cookie ...*http.Cookie) *HttpReqBuilder {
+func (b *httpReqBuilder) SetCookies(cookie ...*http.Cookie) *httpReqBuilder {
 	if b.cookies == nil {
 		b.cookies = make([]*http.Cookie, 0)
 	}
@@ -118,27 +99,29 @@ func (b *HttpReqBuilder) SetCookies(cookie ...*http.Cookie) *HttpReqBuilder {
 	return b
 }
 
-func (b *HttpReqBuilder) SetBodyJson(body interface{}) *HttpReqBuilder {
+func (b *httpReqBuilder) SetBodyJson(body interface{}) *httpReqBuilder {
 	jsonStr, err := json.Marshal(body)
 	if err != nil {
-		jsonStr = []byte{}
+		b.err = fmt.Errorf("encode JSON request body: %w", err)
+		return b
 	}
 	b.body = bytes.NewBuffer(jsonStr)
 	return b
 }
 
-func (b *HttpReqBuilder) SetBody(body io.Reader) *HttpReqBuilder {
+func (b *httpReqBuilder) SetBody(body io.Reader) *httpReqBuilder {
 	b.body = body
 	return b
 }
 
-func (b *HttpReqBuilder) Build() (*http.Request, error) {
-	defer b.free()
-
+func (b *httpReqBuilder) Build() (*http.Request, error) {
+	if b.err != nil {
+		return nil, b.err
+	}
 	if b.method == "" {
 		return nil, fmt.Errorf("method is required")
 	}
-	if b.host == "nil" {
+	if b.host == "" {
 		return nil, fmt.Errorf("host is required")
 	}
 	parse, err := url.Parse(b.host + b.path)
@@ -150,7 +133,7 @@ func (b *HttpReqBuilder) Build() (*http.Request, error) {
 	}
 	req, err := http.NewRequest(b.method, parse.String(), b.body)
 	if err != nil {
-		return nil, errors.Join(err, fmt.Errorf("error creating request"))
+		return nil, fmt.Errorf("create request: %w", err)
 	}
 
 	if b.cookies != nil {

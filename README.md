@@ -13,33 +13,69 @@ You need a working Go environment.
 go get github.com/z-xavier/migadu-go
 ```
 
-## Getting Started
+## Getting started
 
-Example:
+Create a domain-scoped client for mailboxes, identities, forwardings, aliases, and rewrites. Constructing a client validates required arguments but does not make a network request.
 
 ```go
 package main
 
-import "github.com/z-xavier/migadu-go"
+import (
+    "context"
+    "fmt"
+    "log"
+    "os"
 
-client, err := migadu.New(os.Getenv("MIGADU_ADMIN_EMAIL"), os.Getenv("MIGADU_API_KEY"), "example.com")
+    migadu "github.com/z-xavier/migadu-go"
+)
 
-// Incorrect API details will return an error
-if err != nil {
-    fmt.Println(err)
-    os.Exit(1)
-}
+func main() {
+    client, err := migadu.New(
+        os.Getenv("MIGADU_ADMIN_EMAIL"),
+        os.Getenv("MIGADU_API_KEY"),
+        "example.com",
+    )
+    if err != nil {
+        log.Fatal(err)
+    }
 
-aliases, err := client.ListAliases(context.Background())
-if err != nil {
-    fmt.Println(err)
-    os.Exit(1)
-}
-
-for _, alias := range aliases {
-    fmt.Println(alias)
-}
-
-return
+    aliases, err := client.ListAliases(context.Background())
+    if err != nil {
+        log.Fatal(err)
+    }
+    for _, alias := range aliases {
+        fmt.Println(alias.Address)
+    }
 }
 ```
+
+Use an account-level client for domain operations:
+
+```go
+client, err := migadu.NewClient(adminEmail, apiKey)
+if err != nil {
+    return err
+}
+
+domains, err := client.ListDomains(ctx)
+```
+
+Create requests expose all documented writable fields. Update requests use pointers so callers can explicitly send `false`, `0`, an empty string, or an empty list:
+
+```go
+maySend := false
+mailbox, err := client.UpdateMailboxWithRequest(ctx, "demo", migadu.UpdateMailboxRequest{
+    MaySend: &maySend,
+})
+```
+
+Non-success responses are returned as `*migadu.APIError` with the HTTP status, Migadu error code, message, and raw response body:
+
+```go
+var apiErr *migadu.APIError
+if errors.As(err, &apiErr) {
+    log.Printf("Migadu error %d %s: %s", apiErr.StatusCode, apiErr.Code, apiErr.Message)
+}
+```
+
+The SDK covers the documented Domains, Mailboxes, Identities, Forwardings, Aliases, and Rewrites endpoints. Every request accepts a `context.Context`; the default per-request timeout is 30 seconds and can be changed through `Client.Timeout`.

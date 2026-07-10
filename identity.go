@@ -2,6 +2,7 @@ package migadu
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 )
 
@@ -22,10 +23,43 @@ type Identity struct {
 	Password             string `json:"password,omitempty"`
 }
 
+// CreateIdentityRequest contains fields accepted by the identity create endpoint.
+type CreateIdentityRequest struct {
+	LocalPart            string  `json:"local_part"`
+	Name                 string  `json:"name,omitempty"`
+	Password             string  `json:"password,omitempty"`
+	MaySend              *bool   `json:"may_send,omitempty"`
+	MayReceive           *bool   `json:"may_receive,omitempty"`
+	MayAccessImap        *bool   `json:"may_access_imap,omitempty"`
+	MayAccessPop3        *bool   `json:"may_access_pop3,omitempty"`
+	MayAccessManagesieve *bool   `json:"may_access_managesieve,omitempty"`
+	FooterActive         *bool   `json:"footer_active,omitempty"`
+	FooterPlainBody      *string `json:"footer_plain_body,omitempty"`
+	FooterHTMLBody       *string `json:"footer_html_body,omitempty"`
+}
+
+// UpdateIdentityRequest uses pointers so zero values can be sent explicitly.
+type UpdateIdentityRequest struct {
+	Name                 *string `json:"name,omitempty"`
+	Password             *string `json:"password,omitempty"`
+	MaySend              *bool   `json:"may_send,omitempty"`
+	MayReceive           *bool   `json:"may_receive,omitempty"`
+	MayAccessImap        *bool   `json:"may_access_imap,omitempty"`
+	MayAccessPop3        *bool   `json:"may_access_pop3,omitempty"`
+	MayAccessManagesieve *bool   `json:"may_access_managesieve,omitempty"`
+	FooterActive         *bool   `json:"footer_active,omitempty"`
+	FooterPlainBody      *string `json:"footer_plain_body,omitempty"`
+	FooterHTMLBody       *string `json:"footer_html_body,omitempty"`
+}
+
 // ListIdentities lists all the identities for the given mailbox local part name.
-// Ir returns a pointer to an array of Identity structs and any error encountered.
+// It returns the identities and any error encountered.
 func (c *Client) ListIdentities(ctx context.Context, mailbox string) ([]*Identity, error) {
-	req, err := c.GetV1ReqBuilder().
+	builder, err := c.getConfiguredDomainReqBuilder()
+	if err != nil {
+		return nil, err
+	}
+	req, err := builder.
 		SetMethod(http.MethodGet).
 		AddRestfulPath(MailboxesPath, mailbox).
 		AddPath(IdentitiesPath).
@@ -35,18 +69,22 @@ func (c *Client) ListIdentities(ctx context.Context, mailbox string) ([]*Identit
 	}
 
 	resp, err := DoRequest[struct {
-		Indentities []*Identity `json:"identities,omitempty"`
+		Identities []*Identity `json:"identities,omitempty"`
 	}](c, ctx, req)
 	if err != nil {
 		return nil, err
 	}
-	return resp.Indentities, nil
+	return resp.Identities, nil
 }
 
 // GetIdentity  retrieves a single identity given its mailbox name and local part name.
 // It returns a pointer to an Identity struct and any error encountered.
 func (c *Client) GetIdentity(ctx context.Context, mailbox, localPart string) (*Identity, error) {
-	req, err := c.GetV1ReqBuilder().
+	builder, err := c.getConfiguredDomainReqBuilder()
+	if err != nil {
+		return nil, err
+	}
+	req, err := builder.
 		SetMethod(http.MethodGet).
 		AddRestfulPath(MailboxesPath, mailbox).
 		AddRestfulPath(IdentitiesPath, localPart).
@@ -59,13 +97,21 @@ func (c *Client) GetIdentity(ctx context.Context, mailbox, localPart string) (*I
 }
 
 // NewIdentity creates a new identity given the mailbox, local part name and a display name.
-// It returns a pointer to am Identity struct and any error encountered.
+// It returns the created identity and any error encountered.
 func (c *Client) NewIdentity(ctx context.Context, mailbox, localPart, displayName string) (*Identity, error) {
-	identity := Identity{LocalPart: localPart, Name: displayName}
-	req, err := c.GetV1ReqBuilder().
+	return c.CreateIdentity(ctx, mailbox, CreateIdentityRequest{LocalPart: localPart, Name: displayName})
+}
+
+// CreateIdentity creates an identity using all fields supported by the API.
+func (c *Client) CreateIdentity(ctx context.Context, mailbox string, identity CreateIdentityRequest) (*Identity, error) {
+	builder, err := c.getConfiguredDomainReqBuilder()
+	if err != nil {
+		return nil, err
+	}
+	req, err := builder.
 		SetMethod(http.MethodPost).
 		AddRestfulPath(MailboxesPath, mailbox).
-		AddRestfulPath(IdentitiesPath, localPart).
+		AddPath(IdentitiesPath).
 		SetHeaderContentTypeJson().
 		SetBodyJson(identity).
 		Build()
@@ -78,12 +124,33 @@ func (c *Client) NewIdentity(ctx context.Context, mailbox, localPart, displayNam
 // UpdateIdentity updates an identity in place given a pointer to an Identity struct.
 // It returns a pointer to a new Identity struct and any error encountered.
 func (c *Client) UpdateIdentity(ctx context.Context, mailbox, localPart string, identity *Identity) (*Identity, error) {
-	req, err := c.GetV1ReqBuilder().
+	if identity == nil {
+		return nil, fmt.Errorf("identity is required")
+	}
+	update := UpdateIdentityRequest{
+		Name: &identity.Name, MaySend: &identity.MaySend, MayReceive: &identity.MayReceive,
+		MayAccessImap: &identity.MayAccessImap, MayAccessPop3: &identity.MayAccessPop3,
+		MayAccessManagesieve: &identity.MayAccessManagesieve, FooterActive: &identity.FooterActive,
+		FooterPlainBody: &identity.FooterPlainBody, FooterHTMLBody: &identity.FooterHTMLBody,
+	}
+	if identity.Password != "" {
+		update.Password = &identity.Password
+	}
+	return c.UpdateIdentityWithRequest(ctx, mailbox, localPart, update)
+}
+
+// UpdateIdentityWithRequest updates only fields explicitly set on update.
+func (c *Client) UpdateIdentityWithRequest(ctx context.Context, mailbox, localPart string, update UpdateIdentityRequest) (*Identity, error) {
+	builder, err := c.getConfiguredDomainReqBuilder()
+	if err != nil {
+		return nil, err
+	}
+	req, err := builder.
 		SetMethod(http.MethodPut).
 		AddRestfulPath(MailboxesPath, mailbox).
 		AddRestfulPath(IdentitiesPath, localPart).
 		SetHeaderContentTypeJson().
-		SetBodyJson(identity).
+		SetBodyJson(update).
 		Build()
 	if err != nil {
 		return nil, err
@@ -91,10 +158,14 @@ func (c *Client) UpdateIdentity(ctx context.Context, mailbox, localPart string, 
 	return DoRequest[Identity](c, ctx, req)
 }
 
-// DeleteIdentity deletes an identity given a pointer to an Identity struct.
+// DeleteIdentity deletes an identity by mailbox and local part.
 // It returns any error encountered.
 func (c *Client) DeleteIdentity(ctx context.Context, mailbox, localPart string) error {
-	req, err := c.GetV1ReqBuilder().
+	builder, err := c.getConfiguredDomainReqBuilder()
+	if err != nil {
+		return err
+	}
+	req, err := builder.
 		SetMethod(http.MethodDelete).
 		AddRestfulPath(MailboxesPath, mailbox).
 		AddRestfulPath(IdentitiesPath, localPart).

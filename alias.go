@@ -2,8 +2,8 @@ package migadu
 
 import (
 	"context"
+	"fmt"
 	"net/http"
-	"strings"
 )
 
 // Alias represents an alias in the Migadu API.
@@ -18,23 +18,29 @@ type Alias struct {
 	RemoveUponExpiry bool     `json:"remove_upon_expiry,omitempty"`
 }
 
-// aliasJSON is used when a new/updated alias object to the API.
-type aliasJSON struct {
-	Alias
-	DestinationsJSON string `json:"destinations,omitempty"`
+// CreateAliasRequest contains fields accepted by the alias create endpoint.
+type CreateAliasRequest struct {
+	LocalPart    string   `json:"local_part"`
+	Destinations []string `json:"destinations"`
+	IsInternal   *bool    `json:"is_internal,omitempty"`
 }
 
-// convertDestinationsField takes a slice of strings and joins them into a comma separated line.
-func (a *aliasJSON) convertDestinationsField() {
-	a.DestinationsJSON = strings.Join(a.Destinations, ",")
-	a.Destinations = nil
+// UpdateAliasRequest uses pointers so zero values can be sent explicitly.
+type UpdateAliasRequest struct {
+	Destinations     *[]string `json:"destinations,omitempty"`
+	IsInternal       *bool     `json:"is_internal,omitempty"`
+	ExpiresOn        *string   `json:"expires_on,omitempty"`
+	RemoveUponExpiry *bool     `json:"remove_upon_expiry,omitempty"`
 }
 
 // ListAliases lists all the aliases for the domain configured on the client.
-// Ir returns a pointer to an array of Alias structs and any error encountered.
+// It returns the aliases and any error encountered.
 func (c *Client) ListAliases(ctx context.Context) ([]*Alias, error) {
-
-	req, err := c.GetV1ReqBuilder().
+	builder, err := c.getConfiguredDomainReqBuilder()
+	if err != nil {
+		return nil, err
+	}
+	req, err := builder.
 		SetMethod(http.MethodGet).
 		AddPath(AliasesPath).
 		Build()
@@ -54,7 +60,11 @@ func (c *Client) ListAliases(ctx context.Context) ([]*Alias, error) {
 // GetAlias retrieves a single alias given its local part name.
 // It returns a pointer to an Alias struct and any error encountered.
 func (c *Client) GetAlias(ctx context.Context, localPart string) (*Alias, error) {
-	req, err := c.GetV1ReqBuilder().
+	builder, err := c.getConfiguredDomainReqBuilder()
+	if err != nil {
+		return nil, err
+	}
+	req, err := builder.
 		SetMethod(http.MethodGet).
 		AddRestfulPath(AliasesPath, localPart).
 		Build()
@@ -68,13 +78,20 @@ func (c *Client) GetAlias(ctx context.Context, localPart string) (*Alias, error)
 // NewAlias creates a new alias given the local part name and its destinations.
 // It returns a pointer to an Alias struct and any error encountered.
 func (c *Client) NewAlias(ctx context.Context, localPart string, destinations []string) (*Alias, error) {
-	aliasJSON := aliasJSON{Alias: Alias{LocalPart: localPart, Destinations: destinations}}
-	aliasJSON.convertDestinationsField()
-	req, err := c.GetV1ReqBuilder().
+	return c.CreateAlias(ctx, CreateAliasRequest{LocalPart: localPart, Destinations: destinations})
+}
+
+// CreateAlias creates an alias using all fields supported by the API.
+func (c *Client) CreateAlias(ctx context.Context, alias CreateAliasRequest) (*Alias, error) {
+	builder, err := c.getConfiguredDomainReqBuilder()
+	if err != nil {
+		return nil, err
+	}
+	req, err := builder.
 		SetMethod(http.MethodPost).
 		AddPath(AliasesPath).
 		SetHeaderContentTypeJson().
-		SetBodyJson(aliasJSON).
+		SetBodyJson(alias).
 		Build()
 	if err != nil {
 		return nil, err
@@ -85,13 +102,30 @@ func (c *Client) NewAlias(ctx context.Context, localPart string, destinations []
 // UpdateAlias updates an alias in place given a pointer to an Alias struct.
 // It returns a pointer to a new Alias struct and any error encountered.
 func (c *Client) UpdateAlias(ctx context.Context, localPart string, a *Alias) (*Alias, error) {
-	aliasJSON := aliasJSON{Alias: *a}
-	aliasJSON.convertDestinationsField()
-	req, err := c.GetV1ReqBuilder().
+	if a == nil {
+		return nil, fmt.Errorf("alias is required")
+	}
+	update := UpdateAliasRequest{
+		Destinations: &a.Destinations, IsInternal: &a.IsInternal,
+		RemoveUponExpiry: &a.RemoveUponExpiry,
+	}
+	if a.ExpiresOn != "" {
+		update.ExpiresOn = &a.ExpiresOn
+	}
+	return c.UpdateAliasWithRequest(ctx, localPart, update)
+}
+
+// UpdateAliasWithRequest updates only fields explicitly set on update.
+func (c *Client) UpdateAliasWithRequest(ctx context.Context, localPart string, update UpdateAliasRequest) (*Alias, error) {
+	builder, err := c.getConfiguredDomainReqBuilder()
+	if err != nil {
+		return nil, err
+	}
+	req, err := builder.
 		SetMethod(http.MethodPut).
 		AddRestfulPath(AliasesPath, localPart).
 		SetHeaderContentTypeJson().
-		SetBodyJson(aliasJSON).
+		SetBodyJson(update).
 		Build()
 	if err != nil {
 		return nil, err
@@ -99,10 +133,14 @@ func (c *Client) UpdateAlias(ctx context.Context, localPart string, a *Alias) (*
 	return DoRequest[Alias](c, ctx, req)
 }
 
-// DeleteAlias deletes an alias given a pointer to an Alias struct.
+// DeleteAlias deletes an alias by local part.
 // It returns any error encountered.
 func (c *Client) DeleteAlias(ctx context.Context, localPart string) error {
-	req, err := c.GetV1ReqBuilder().
+	builder, err := c.getConfiguredDomainReqBuilder()
+	if err != nil {
+		return err
+	}
+	req, err := builder.
 		SetMethod(http.MethodDelete).
 		AddRestfulPath(AliasesPath, localPart).
 		Build()
