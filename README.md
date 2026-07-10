@@ -15,7 +15,7 @@ go get github.com/z-xavier/migadu-go
 
 ## Getting started
 
-Create a domain-scoped client for mailboxes, identities, forwardings, aliases, and rewrites. Constructing a client validates required arguments but does not make a network request.
+Create one account-level client and pass the domain explicitly to domain-scoped operations. Constructing a client validates required arguments but does not make a network request.
 
 ```go
 package main
@@ -33,13 +33,12 @@ func main() {
     client, err := migadu.New(
         os.Getenv("MIGADU_ADMIN_EMAIL"),
         os.Getenv("MIGADU_API_KEY"),
-        "example.com",
     )
     if err != nil {
         log.Fatal(err)
     }
 
-    aliases, err := client.ListAliases(context.Background())
+    aliases, err := client.ListAliases(context.Background(), "example.com")
     if err != nil {
         log.Fatal(err)
     }
@@ -49,22 +48,19 @@ func main() {
 }
 ```
 
-Use an account-level client for domain operations:
+The same client can operate on every domain visible to the authenticated account:
 
 ```go
-client, err := migadu.NewClient(adminEmail, apiKey)
-if err != nil {
-    return err
-}
-
 domains, err := client.ListDomains(ctx)
+mailboxes, err := client.ListMailboxes(ctx, "example.com")
+aliases, err := client.ListAliases(ctx, "other.example")
 ```
 
 Create requests expose all documented writable fields. Update requests use pointers so callers can explicitly send `false`, `0`, an empty string, or an empty list:
 
 ```go
 maySend := false
-mailbox, err := client.UpdateMailboxWithRequest(ctx, "demo", migadu.UpdateMailboxRequest{
+mailbox, err := client.UpdateMailbox(ctx, "example.com", "demo", migadu.UpdateMailboxRequest{
     MaySend: &maySend,
 })
 ```

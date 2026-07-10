@@ -46,73 +46,90 @@ func TestDocumentedEndpoints(t *testing.T) {
 			return err
 		}},
 
-		{name: "mailboxes index", method: "GET", path: "/v1/domains/example.com/mailboxes", response: `{"mailboxes":[]}`, call: func(ctx context.Context, c *Client) error { _, err := c.ListMailboxes(ctx); return err }},
-		{name: "mailboxes show", method: "GET", path: "/v1/domains/example.com/mailboxes/demo", response: `{}`, call: func(ctx context.Context, c *Client) error { _, err := c.GetMailbox(ctx, "demo"); return err }},
+		{name: "mailboxes index", method: "GET", path: "/v1/domains/example.com/mailboxes", response: `{"mailboxes":[]}`, call: func(ctx context.Context, c *Client) error { _, err := c.ListMailboxes(ctx, "example.com"); return err }},
+		{name: "mailboxes show", method: "GET", path: "/v1/domains/example.com/mailboxes/demo", response: `{}`, call: func(ctx context.Context, c *Client) error {
+			_, err := c.GetMailbox(ctx, "example.com", "demo")
+			return err
+		}},
 		{name: "mailboxes create", method: "POST", path: "/v1/domains/example.com/mailboxes", response: `{}`, expectedJSON: map[string]any{"local_part": "demo", "forwarding_to": "outside@example.net", "wildcard_sender": false}, call: func(ctx context.Context, c *Client) error {
-			_, err := c.CreateMailbox(ctx, CreateMailboxRequest{LocalPart: "demo", ForwardingTo: "outside@example.net", WildcardSender: &falseValue})
+			_, err := c.CreateMailbox(ctx, "example.com", CreateMailboxRequest{LocalPart: "demo", ForwardingTo: "outside@example.net", WildcardSender: &falseValue})
 			return err
 		}},
 		{name: "mailboxes update", method: "PUT", path: "/v1/domains/example.com/mailboxes/demo", response: `{}`, expectedJSON: map[string]any{"may_send": false, "recipient_denylist": []any{}}, call: func(ctx context.Context, c *Client) error {
-			_, err := c.UpdateMailboxWithRequest(ctx, "demo", UpdateMailboxRequest{MaySend: &falseValue, RecipientDenylist: &emptyList})
+			_, err := c.UpdateMailbox(ctx, "example.com", "demo", UpdateMailboxRequest{MaySend: &falseValue, RecipientDenylist: &emptyList})
 			return err
 		}},
-		{name: "mailboxes delete", method: "DELETE", path: "/v1/domains/example.com/mailboxes/demo", response: ``, call: func(ctx context.Context, c *Client) error { return c.DeleteMailbox(ctx, "demo") }},
+		{name: "mailboxes delete", method: "DELETE", path: "/v1/domains/example.com/mailboxes/demo", response: ``, call: func(ctx context.Context, c *Client) error { return c.DeleteMailbox(ctx, "example.com", "demo") }},
 
-		{name: "identities index", method: "GET", path: "/v1/domains/example.com/mailboxes/demo/identities", response: `{"identities":[]}`, call: func(ctx context.Context, c *Client) error { _, err := c.ListIdentities(ctx, "demo"); return err }},
+		{name: "identities index", method: "GET", path: "/v1/domains/example.com/mailboxes/demo/identities", response: `{"identities":[]}`, call: func(ctx context.Context, c *Client) error {
+			_, err := c.ListIdentities(ctx, "example.com", "demo")
+			return err
+		}},
 		{name: "identities show", method: "GET", path: "/v1/domains/example.com/mailboxes/demo/identities/example", response: `{}`, call: func(ctx context.Context, c *Client) error {
-			_, err := c.GetIdentity(ctx, "demo", "example")
+			_, err := c.GetIdentity(ctx, "example.com", "demo", "example")
 			return err
 		}},
 		{name: "identities create", method: "POST", path: "/v1/domains/example.com/mailboxes/demo/identities", response: `{}`, expectedJSON: map[string]any{"local_part": "example", "password": "secret"}, call: func(ctx context.Context, c *Client) error {
-			_, err := c.CreateIdentity(ctx, "demo", CreateIdentityRequest{LocalPart: "example", Password: "secret"})
+			_, err := c.CreateIdentity(ctx, "example.com", "demo", CreateIdentityRequest{LocalPart: "example", Password: "secret"})
 			return err
 		}},
 		{name: "identities update", method: "PUT", path: "/v1/domains/example.com/mailboxes/demo/identities/example", response: `{}`, expectedJSON: map[string]any{"footer_active": false}, call: func(ctx context.Context, c *Client) error {
-			_, err := c.UpdateIdentityWithRequest(ctx, "demo", "example", UpdateIdentityRequest{FooterActive: &falseValue})
+			_, err := c.UpdateIdentity(ctx, "example.com", "demo", "example", UpdateIdentityRequest{FooterActive: &falseValue})
 			return err
 		}},
-		{name: "identities delete", method: "DELETE", path: "/v1/domains/example.com/mailboxes/demo/identities/example", response: ``, call: func(ctx context.Context, c *Client) error { return c.DeleteIdentity(ctx, "demo", "example") }},
+		{name: "identities delete", method: "DELETE", path: "/v1/domains/example.com/mailboxes/demo/identities/example", response: ``, call: func(ctx context.Context, c *Client) error {
+			return c.DeleteIdentity(ctx, "example.com", "demo", "example")
+		}},
 
-		{name: "forwardings index", method: "GET", path: "/v1/domains/example.com/mailboxes/demo/forwardings", response: `{"forwardings":[]}`, call: func(ctx context.Context, c *Client) error { _, err := c.ListForwardings(ctx, "demo"); return err }},
+		{name: "forwardings index", method: "GET", path: "/v1/domains/example.com/mailboxes/demo/forwardings", response: `{"forwardings":[]}`, call: func(ctx context.Context, c *Client) error {
+			_, err := c.ListForwardings(ctx, "example.com", "demo")
+			return err
+		}},
 		{name: "forwardings show", method: "GET", path: "/v1/domains/example.com/mailboxes/demo/forwardings/outside@example.net", response: `{}`, call: func(ctx context.Context, c *Client) error {
-			_, err := c.GetForwarding(ctx, "demo", "outside@example.net")
+			_, err := c.GetForwarding(ctx, "example.com", "demo", "outside@example.net")
 			return err
 		}},
 		{name: "forwardings create", method: "POST", path: "/v1/domains/example.com/mailboxes/demo/forwardings", response: `{}`, expectedJSON: map[string]any{"address": "outside@example.net", "is_active": false}, call: func(ctx context.Context, c *Client) error {
-			_, err := c.CreateForwarding(ctx, "demo", CreateForwardingRequest{Address: "outside@example.net", IsActive: &falseValue})
+			_, err := c.CreateForwarding(ctx, "example.com", "demo", CreateForwardingRequest{Address: "outside@example.net", IsActive: &falseValue})
 			return err
 		}},
 		{name: "forwardings update", method: "PUT", path: "/v1/domains/example.com/mailboxes/demo/forwardings/outside@example.net", response: `{}`, expectedJSON: map[string]any{"remove_upon_expiry": false}, call: func(ctx context.Context, c *Client) error {
-			_, err := c.UpdateForwarding(ctx, "demo", "outside@example.net", UpdateForwardingRequest{RemoveUponExpiry: &falseValue})
+			_, err := c.UpdateForwarding(ctx, "example.com", "demo", "outside@example.net", UpdateForwardingRequest{RemoveUponExpiry: &falseValue})
 			return err
 		}},
 		{name: "forwardings delete", method: "DELETE", path: "/v1/domains/example.com/mailboxes/demo/forwardings/outside@example.net", response: ``, call: func(ctx context.Context, c *Client) error {
-			return c.DeleteForwarding(ctx, "demo", "outside@example.net")
+			return c.DeleteForwarding(ctx, "example.com", "demo", "outside@example.net")
 		}},
 
-		{name: "aliases index", method: "GET", path: "/v1/domains/example.com/aliases", response: `{"address_aliases":[]}`, call: func(ctx context.Context, c *Client) error { _, err := c.ListAliases(ctx); return err }},
-		{name: "aliases show", method: "GET", path: "/v1/domains/example.com/aliases/demo", response: `{}`, call: func(ctx context.Context, c *Client) error { _, err := c.GetAlias(ctx, "demo"); return err }},
+		{name: "aliases index", method: "GET", path: "/v1/domains/example.com/aliases", response: `{"address_aliases":[]}`, call: func(ctx context.Context, c *Client) error { _, err := c.ListAliases(ctx, "example.com"); return err }},
+		{name: "aliases show", method: "GET", path: "/v1/domains/example.com/aliases/demo", response: `{}`, call: func(ctx context.Context, c *Client) error {
+			_, err := c.GetAlias(ctx, "example.com", "demo")
+			return err
+		}},
 		{name: "aliases create", method: "POST", path: "/v1/domains/example.com/aliases", response: `{}`, expectedJSON: map[string]any{"local_part": "demo", "destinations": []any{"target@example.com"}, "is_internal": false}, call: func(ctx context.Context, c *Client) error {
-			_, err := c.CreateAlias(ctx, CreateAliasRequest{LocalPart: "demo", Destinations: []string{"target@example.com"}, IsInternal: &falseValue})
+			_, err := c.CreateAlias(ctx, "example.com", CreateAliasRequest{LocalPart: "demo", Destinations: []string{"target@example.com"}, IsInternal: &falseValue})
 			return err
 		}},
 		{name: "aliases update", method: "PUT", path: "/v1/domains/example.com/aliases/demo", response: `{}`, expectedJSON: map[string]any{"destinations": []any{}}, call: func(ctx context.Context, c *Client) error {
-			_, err := c.UpdateAliasWithRequest(ctx, "demo", UpdateAliasRequest{Destinations: &emptyList})
+			_, err := c.UpdateAlias(ctx, "example.com", "demo", UpdateAliasRequest{Destinations: &emptyList})
 			return err
 		}},
-		{name: "aliases delete", method: "DELETE", path: "/v1/domains/example.com/aliases/demo", response: ``, call: func(ctx context.Context, c *Client) error { return c.DeleteAlias(ctx, "demo") }},
+		{name: "aliases delete", method: "DELETE", path: "/v1/domains/example.com/aliases/demo", response: ``, call: func(ctx context.Context, c *Client) error { return c.DeleteAlias(ctx, "example.com", "demo") }},
 
-		{name: "rewrites index", method: "GET", path: "/v1/domains/example.com/rewrites", response: `{"rewrites":[]}`, call: func(ctx context.Context, c *Client) error { _, err := c.ListRewrites(ctx); return err }},
-		{name: "rewrites show", method: "GET", path: "/v1/domains/example.com/rewrites/demo", response: `{}`, call: func(ctx context.Context, c *Client) error { _, err := c.GetRewrite(ctx, "demo"); return err }},
+		{name: "rewrites index", method: "GET", path: "/v1/domains/example.com/rewrites", response: `{"rewrites":[]}`, call: func(ctx context.Context, c *Client) error { _, err := c.ListRewrites(ctx, "example.com"); return err }},
+		{name: "rewrites show", method: "GET", path: "/v1/domains/example.com/rewrites/demo", response: `{}`, call: func(ctx context.Context, c *Client) error {
+			_, err := c.GetRewrite(ctx, "example.com", "demo")
+			return err
+		}},
 		{name: "rewrites create", method: "POST", path: "/v1/domains/example.com/rewrites", response: `{}`, expectedJSON: map[string]any{"name": "demo", "local_part_rule": "demo-*", "destinations": []any{"target@example.com"}, "order_num": float64(0)}, call: func(ctx context.Context, c *Client) error {
-			_, err := c.CreateRewrite(ctx, CreateRewriteRequest{Name: "demo", LocalPartRule: "demo-*", Destinations: []string{"target@example.com"}, OrderNum: &zero})
+			_, err := c.CreateRewrite(ctx, "example.com", CreateRewriteRequest{Name: "demo", LocalPartRule: "demo-*", Destinations: []string{"target@example.com"}, OrderNum: &zero})
 			return err
 		}},
 		{name: "rewrites update", method: "PUT", path: "/v1/domains/example.com/rewrites/demo", response: `{}`, expectedJSON: map[string]any{"order_num": float64(0)}, call: func(ctx context.Context, c *Client) error {
-			_, err := c.UpdateRewriteWithRequest(ctx, "demo", UpdateRewriteRequest{OrderNum: &zero})
+			_, err := c.UpdateRewrite(ctx, "example.com", "demo", UpdateRewriteRequest{OrderNum: &zero})
 			return err
 		}},
-		{name: "rewrites delete", method: "DELETE", path: "/v1/domains/example.com/rewrites/demo", response: ``, call: func(ctx context.Context, c *Client) error { return c.DeleteRewrite(ctx, "demo") }},
+		{name: "rewrites delete", method: "DELETE", path: "/v1/domains/example.com/rewrites/demo", response: ``, call: func(ctx context.Context, c *Client) error { return c.DeleteRewrite(ctx, "example.com", "demo") }},
 	}
 
 	for _, tt := range tests {
@@ -166,33 +183,12 @@ func TestDomainFlexibleResponseFields(t *testing.T) {
 	}
 }
 
-func TestNewIdentityUsesCollectionPath(t *testing.T) {
+func TestCreateIdentityUsesCollectionPath(t *testing.T) {
 	request := performRequest(t, `{}`, func(ctx context.Context, client *Client) error {
-		_, err := client.NewIdentity(ctx, "demo", "example", "Example")
+		_, err := client.CreateIdentity(ctx, "example.com", "demo", CreateIdentityRequest{LocalPart: "example", Name: "Example"})
 		return err
 	})
 	if request.Method != "POST" || request.Path != "/v1/domains/example.com/mailboxes/demo/identities" {
 		t.Fatalf("request = %s %s", request.Method, request.Path)
-	}
-}
-
-func TestUpdateMailboxCompatibilityOmitsReadOnlyFields(t *testing.T) {
-	request := performRequest(t, `{}`, func(ctx context.Context, client *Client) error {
-		_, err := client.UpdateMailbox(ctx, "demo", &Mailbox{
-			Address: "demo@example.com", DomainName: "example.com", LocalPart: "demo", MaySend: false,
-		})
-		return err
-	})
-	var body map[string]any
-	if err := json.Unmarshal(request.Body, &body); err != nil {
-		t.Fatalf("decode request body: %v", err)
-	}
-	if body["may_send"] != false {
-		t.Fatalf("may_send = %#v, body = %s", body["may_send"], request.Body)
-	}
-	for _, readOnly := range []string{"address", "domain_name", "local_part"} {
-		if _, ok := body[readOnly]; ok {
-			t.Errorf("read-only field %q was sent: %s", readOnly, request.Body)
-		}
 	}
 }

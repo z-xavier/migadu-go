@@ -22,7 +22,7 @@ type capturedRequest struct {
 func performRequest(t *testing.T, response string, call func(context.Context, *Client) error) capturedRequest {
 	t.Helper()
 	var captured capturedRequest
-	client, err := New("admin@example.com", "secret", "example.com")
+	client, err := New("admin@example.com", "secret")
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
@@ -54,20 +54,12 @@ func performRequest(t *testing.T, response string, call func(context.Context, *C
 }
 
 func TestNewDoesNotMakeRequest(t *testing.T) {
-	client, err := New("admin@example.com", "secret", "example.com")
+	client, err := New("admin@example.com", "secret")
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
-	if client.Domain != "example.com" || client.BaseURL != APIHost {
+	if client.BaseURL != defaultAPIHost {
 		t.Fatalf("New() client = %+v", client)
-	}
-
-	accountClient, err := NewClient("admin@example.com", "secret")
-	if err != nil {
-		t.Fatalf("NewClient() error = %v", err)
-	}
-	if accountClient.Domain != "" {
-		t.Fatalf("NewClient() domain = %q", accountClient.Domain)
 	}
 }
 
@@ -77,9 +69,8 @@ func TestNewValidatesRequiredFields(t *testing.T) {
 		new  func() error
 		want error
 	}{
-		{name: "email", new: func() error { _, err := NewClient("", "key"); return err }, want: ErrEmailRequired},
-		{name: "API key", new: func() error { _, err := NewClient("admin@example.com", ""); return err }, want: ErrAPIKeyRequired},
-		{name: "domain", new: func() error { _, err := New("admin@example.com", "key", ""); return err }, want: ErrDomainRequired},
+		{name: "email", new: func() error { _, err := New("", "key"); return err }, want: ErrEmailRequired},
+		{name: "API key", new: func() error { _, err := New("admin@example.com", ""); return err }, want: ErrAPIKeyRequired},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -87,6 +78,17 @@ func TestNewValidatesRequiredFields(t *testing.T) {
 				t.Fatalf("error = %v, want %v", err, tt.want)
 			}
 		})
+	}
+}
+
+func TestDomainScopedMethodsRequireDomain(t *testing.T) {
+	client, err := New("admin@example.com", "secret")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = client.ListMailboxes(context.Background(), "")
+	if !errors.Is(err, ErrDomainRequired) {
+		t.Fatalf("error = %v, want %v", err, ErrDomainRequired)
 	}
 }
 
@@ -106,7 +108,7 @@ func (b *trackedBody) Close() error {
 	return nil
 }
 
-func TestDoRequestReturnsAPIErrorAndClosesBody(t *testing.T) {
+func TestRequestReturnsAPIErrorAndClosesBody(t *testing.T) {
 	body := &trackedBody{Reader: strings.NewReader(`{"error":"dns_check_failed","message":"DNS checks failed"}`)}
 	client := &Client{HTTPClient: doerFunc(func(*http.Request) (*http.Response, error) {
 		return &http.Response{StatusCode: http.StatusUnprocessableEntity, ContentLength: -1, Body: body}, nil
@@ -115,7 +117,7 @@ func TestDoRequestReturnsAPIErrorAndClosesBody(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = DoRequest[Domain](client, context.Background(), req)
+	_, err = doRequest[Domain](client, context.Background(), req)
 	var apiErr *APIError
 	if !errors.As(err, &apiErr) {
 		t.Fatalf("error = %v, want *APIError", err)
@@ -128,18 +130,18 @@ func TestDoRequestReturnsAPIErrorAndClosesBody(t *testing.T) {
 	}
 }
 
-func TestDoRequestAcceptsEmptySuccessBody(t *testing.T) {
+func TestRequestAcceptsEmptySuccessBody(t *testing.T) {
 	client := &Client{HTTPClient: doerFunc(func(*http.Request) (*http.Response, error) {
 		return &http.Response{StatusCode: http.StatusNoContent, Body: io.NopCloser(strings.NewReader(""))}, nil
 	})}
 	req, _ := http.NewRequest(http.MethodDelete, "https://example.com", nil)
-	result, err := DoRequest[struct{}](client, context.Background(), req)
+	result, err := doRequest[struct{}](client, context.Background(), req)
 	if err != nil || result == nil {
-		t.Fatalf("DoRequest() result = %v, error = %v", result, err)
+		t.Fatalf("doRequest() result = %v, error = %v", result, err)
 	}
 }
 
-func TestDoRequestAppliesTimeout(t *testing.T) {
+func TestRequestAppliesTimeout(t *testing.T) {
 	client := &Client{
 		Timeout: time.Millisecond,
 		HTTPClient: doerFunc(func(req *http.Request) (*http.Response, error) {
@@ -148,13 +150,13 @@ func TestDoRequestAppliesTimeout(t *testing.T) {
 		}),
 	}
 	req, _ := http.NewRequest(http.MethodGet, "https://example.com", nil)
-	_, err := DoRequest[struct{}](client, context.Background(), req)
+	_, err := doRequest[struct{}](client, context.Background(), req)
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("error = %v, want deadline exceeded", err)
 	}
 }
 
-func TestDoRequestUsesContextWhenTimeoutDisabled(t *testing.T) {
+func TestRequestUsesContextWhenTimeoutDisabled(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	client := &Client{
@@ -163,7 +165,7 @@ func TestDoRequestUsesContextWhenTimeoutDisabled(t *testing.T) {
 		}),
 	}
 	req, _ := http.NewRequest(http.MethodGet, "https://example.com", nil)
-	_, err := DoRequest[struct{}](client, ctx, req)
+	_, err := doRequest[struct{}](client, ctx, req)
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("error = %v, want context canceled", err)
 	}

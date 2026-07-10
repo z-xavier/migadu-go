@@ -32,20 +32,20 @@ type UpdateForwardingRequest struct {
 }
 
 // ListForwardings lists all external forwarding addresses on a mailbox.
-func (c *Client) ListForwardings(ctx context.Context, mailbox string) ([]*Forwarding, error) {
-	builder, err := c.getConfiguredDomainReqBuilder()
+func (c *Client) ListForwardings(ctx context.Context, domain, mailbox string) ([]*Forwarding, error) {
+	builder, err := c.getDomainReqBuilder(domain)
 	if err != nil {
 		return nil, err
 	}
 	req, err := builder.
 		SetMethod(http.MethodGet).
-		AddRestfulPath(MailboxesPath, mailbox).
-		AddPath(ForwardingsPath).
+		AddRestfulPath(mailboxesPath, mailbox).
+		AddPath(forwardingsPath).
 		Build()
 	if err != nil {
 		return nil, err
 	}
-	resp, err := DoRequest[struct {
+	resp, err := doRequest[struct {
 		Forwardings []*Forwarding `json:"forwardings"`
 	}](c, ctx, req)
 	if err != nil {
@@ -55,74 +55,74 @@ func (c *Client) ListForwardings(ctx context.Context, mailbox string) ([]*Forwar
 }
 
 // GetForwarding retrieves an external forwarding address on a mailbox.
-func (c *Client) GetForwarding(ctx context.Context, mailbox, address string) (*Forwarding, error) {
-	builder, err := c.getConfiguredDomainReqBuilder()
+func (c *Client) GetForwarding(ctx context.Context, domain, mailbox, address string) (*Forwarding, error) {
+	builder, err := c.getDomainReqBuilder(domain)
 	if err != nil {
 		return nil, err
 	}
 	req, err := builder.
 		SetMethod(http.MethodGet).
-		AddRestfulPath(MailboxesPath, mailbox).
-		AddRestfulPath(ForwardingsPath, address).
+		AddRestfulPath(mailboxesPath, mailbox).
+		AddRestfulPath(forwardingsPath, address).
 		Build()
 	if err != nil {
 		return nil, err
 	}
-	return DoRequest[Forwarding](c, ctx, req)
+	return doRequest[Forwarding](c, ctx, req)
 }
 
 // CreateForwarding adds an external forwarding address to a mailbox.
-func (c *Client) CreateForwarding(ctx context.Context, mailbox string, forwarding CreateForwardingRequest) (*Forwarding, error) {
-	builder, err := c.getConfiguredDomainReqBuilder()
+func (c *Client) CreateForwarding(ctx context.Context, domain, mailbox string, forwarding CreateForwardingRequest) (*Forwarding, error) {
+	builder, err := c.getDomainReqBuilder(domain)
 	if err != nil {
 		return nil, err
 	}
 	req, err := builder.
 		SetMethod(http.MethodPost).
-		AddRestfulPath(MailboxesPath, mailbox).
-		AddPath(ForwardingsPath).
+		AddRestfulPath(mailboxesPath, mailbox).
+		AddPath(forwardingsPath).
 		SetHeaderContentTypeJson().
 		SetBodyJson(forwarding).
 		Build()
 	if err != nil {
 		return nil, err
 	}
-	return DoRequest[Forwarding](c, ctx, req)
+	return doRequest[Forwarding](c, ctx, req)
 }
 
 // UpdateForwarding updates an external forwarding address on a mailbox.
-func (c *Client) UpdateForwarding(ctx context.Context, mailbox, address string, update UpdateForwardingRequest) (*Forwarding, error) {
-	builder, err := c.getConfiguredDomainReqBuilder()
+func (c *Client) UpdateForwarding(ctx context.Context, domain, mailbox, address string, update UpdateForwardingRequest) (*Forwarding, error) {
+	builder, err := c.getDomainReqBuilder(domain)
 	if err != nil {
 		return nil, err
 	}
 	req, err := builder.
 		SetMethod(http.MethodPut).
-		AddRestfulPath(MailboxesPath, mailbox).
-		AddRestfulPath(ForwardingsPath, address).
+		AddRestfulPath(mailboxesPath, mailbox).
+		AddRestfulPath(forwardingsPath, address).
 		SetHeaderContentTypeJson().
 		SetBodyJson(update).
 		Build()
 	if err != nil {
 		return nil, err
 	}
-	return DoRequest[Forwarding](c, ctx, req)
+	return doRequest[Forwarding](c, ctx, req)
 }
 
 // DeleteForwarding removes an external forwarding address from a mailbox.
-func (c *Client) DeleteForwarding(ctx context.Context, mailbox, address string) error {
-	builder, err := c.getConfiguredDomainReqBuilder()
+func (c *Client) DeleteForwarding(ctx context.Context, domain, mailbox, address string) error {
+	builder, err := c.getDomainReqBuilder(domain)
 	if err != nil {
 		return err
 	}
 	req, err := builder.
 		SetMethod(http.MethodDelete).
-		AddRestfulPath(MailboxesPath, mailbox).
-		AddRestfulPath(ForwardingsPath, address).
+		AddRestfulPath(mailboxesPath, mailbox).
+		AddRestfulPath(forwardingsPath, address).
 		Build()
 	if err != nil {
 		return err
 	}
-	_, err = DoRequest[struct{}](c, ctx, req)
+	_, err = doRequest[struct{}](c, ctx, req)
 	return err
 }

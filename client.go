@@ -12,16 +12,16 @@ import (
 )
 
 const (
-	APIHost        = "https://api.migadu.com"
-	V1Path         = "v1"
+	defaultAPIHost = "https://api.migadu.com"
+	v1Path         = "v1"
 	DefaultTimeout = 30 * time.Second
 
-	DomainsPath     = "domains"
-	AliasesPath     = "aliases"
-	RewritesPath    = "rewrites"
-	IdentitiesPath  = "identities"
-	MailboxesPath   = "mailboxes"
-	ForwardingsPath = "forwardings"
+	domainsPath     = "domains"
+	aliasesPath     = "aliases"
+	rewritesPath    = "rewrites"
+	identitiesPath  = "identities"
+	mailboxesPath   = "mailboxes"
+	forwardingsPath = "forwardings"
 )
 
 var (
@@ -37,27 +37,22 @@ type HTTPDoer interface {
 
 // Client represents a client for working with Migadu API.
 type Client struct {
-	Email      string
-	APIKey     string
-	Domain     string
 	BaseURL    string
-	Cookies    []*http.Cookie
 	Timeout    time.Duration
 	HTTPClient HTTPDoer
+	email      string
+	apiKey     string
 }
 
 func (c *Client) getV1ReqBuilder() *httpReqBuilder {
 	baseURL := c.BaseURL
 	if baseURL == "" {
-		baseURL = APIHost
+		baseURL = defaultAPIHost
 	}
 	builder := newReqBuilder().
 		SetHost(baseURL).
-		AddPath(V1Path).
-		SetBasicAuth(c.Email, c.APIKey)
-	if len(c.Cookies) > 0 {
-		builder.SetCookies(c.Cookies...)
-	}
+		AddPath(v1Path).
+		SetBasicAuth(c.email, c.apiKey)
 	return builder
 }
 
@@ -65,14 +60,11 @@ func (c *Client) getDomainReqBuilder(domain string) (*httpReqBuilder, error) {
 	if strings.TrimSpace(domain) == "" {
 		return nil, ErrDomainRequired
 	}
-	return c.getV1ReqBuilder().AddRestfulPath(DomainsPath, domain), nil
+	return c.getV1ReqBuilder().AddRestfulPath(domainsPath, domain), nil
 }
 
-func (c *Client) getConfiguredDomainReqBuilder() (*httpReqBuilder, error) {
-	return c.getDomainReqBuilder(c.Domain)
-}
-
-func newClient(email, apiKey string) (*Client, error) {
+// New creates a Migadu API client without making a network request.
+func New(email, apiKey string) (*Client, error) {
 	if strings.TrimSpace(email) == "" {
 		return nil, ErrEmailRequired
 	}
@@ -80,30 +72,12 @@ func newClient(email, apiKey string) (*Client, error) {
 		return nil, ErrAPIKeyRequired
 	}
 	return &Client{
-		Email:      email,
-		APIKey:     apiKey,
-		BaseURL:    APIHost,
+		BaseURL:    defaultAPIHost,
 		Timeout:    DefaultTimeout,
 		HTTPClient: http.DefaultClient,
+		email:      email,
+		apiKey:     apiKey,
 	}, nil
-}
-
-// NewClient creates an account-level Migadu API client without making a network request.
-func NewClient(email, apiKey string) (*Client, error) {
-	return newClient(email, apiKey)
-}
-
-// New creates a domain-scoped Migadu API client without making a network request.
-func New(email string, apiKey string, domain string) (*Client, error) {
-	if strings.TrimSpace(domain) == "" {
-		return nil, ErrDomainRequired
-	}
-	client, err := newClient(email, apiKey)
-	if err != nil {
-		return nil, err
-	}
-	client.Domain = domain
-	return client, nil
 }
 
 // APIError describes a non-success response returned by the Migadu API.
@@ -128,8 +102,7 @@ func (e *APIError) Error() string {
 	return fmt.Sprintf("Migadu API returned status %d: %s", e.StatusCode, detail)
 }
 
-// DoRequest executes and decodes a Migadu API request.
-func DoRequest[T any](c *Client, ctx context.Context, req *http.Request) (*T, error) {
+func doRequest[T any](c *Client, ctx context.Context, req *http.Request) (*T, error) {
 	if c.Timeout != 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, c.Timeout)

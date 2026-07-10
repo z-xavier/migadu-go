@@ -14,9 +14,7 @@ type httpReqBuilder struct {
 	method    string
 	host      string
 	path      string
-	values    *url.Values
 	header    *http.Header
-	cookies   []*http.Cookie
 	body      io.Reader
 	basicAuth *basicAuth
 	err       error
@@ -50,30 +48,6 @@ func (b *httpReqBuilder) AddRestfulPath(key, value string) *httpReqBuilder {
 	return b
 }
 
-func (b *httpReqBuilder) AddValues(key, value string) *httpReqBuilder {
-	if b.values == nil {
-		b.values = &url.Values{}
-	}
-	b.values.Add(key, value)
-	return b
-}
-
-func (b *httpReqBuilder) SetValues(key, value string) *httpReqBuilder {
-	if b.values == nil {
-		b.values = &url.Values{}
-	}
-	b.values.Set(key, value)
-	return b
-}
-
-func (b *httpReqBuilder) AddHeader(key, value string) *httpReqBuilder {
-	if b.header == nil {
-		b.header = &http.Header{}
-	}
-	b.header.Add(key, value)
-	return b
-}
-
 func (b *httpReqBuilder) SetHeaderContentTypeJson() *httpReqBuilder {
 	return b.SetHeader("Content-Type", "application/json")
 }
@@ -91,14 +65,6 @@ func (b *httpReqBuilder) SetBasicAuth(username, password string) *httpReqBuilder
 	return b
 }
 
-func (b *httpReqBuilder) SetCookies(cookie ...*http.Cookie) *httpReqBuilder {
-	if b.cookies == nil {
-		b.cookies = make([]*http.Cookie, 0)
-	}
-	b.cookies = append(b.cookies, cookie...)
-	return b
-}
-
 func (b *httpReqBuilder) SetBodyJson(body interface{}) *httpReqBuilder {
 	jsonStr, err := json.Marshal(body)
 	if err != nil {
@@ -106,11 +72,6 @@ func (b *httpReqBuilder) SetBodyJson(body interface{}) *httpReqBuilder {
 		return b
 	}
 	b.body = bytes.NewBuffer(jsonStr)
-	return b
-}
-
-func (b *httpReqBuilder) SetBody(body io.Reader) *httpReqBuilder {
-	b.body = body
 	return b
 }
 
@@ -128,18 +89,9 @@ func (b *httpReqBuilder) Build() (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
-	if b.values != nil {
-		parse.RawQuery = b.values.Encode()
-	}
 	req, err := http.NewRequest(b.method, parse.String(), b.body)
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
-	}
-
-	if b.cookies != nil {
-		for _, cookie := range b.cookies {
-			req.AddCookie(cookie)
-		}
 	}
 
 	if b.header != nil {

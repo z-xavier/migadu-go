@@ -192,11 +192,11 @@ type DomainUsage struct {
 
 // ListDomains lists all domains visible to the authenticated account.
 func (c *Client) ListDomains(ctx context.Context) ([]*Domain, error) {
-	req, err := c.getV1ReqBuilder().SetMethod(http.MethodGet).AddPath(DomainsPath).Build()
+	req, err := c.getV1ReqBuilder().SetMethod(http.MethodGet).AddPath(domainsPath).Build()
 	if err != nil {
 		return nil, err
 	}
-	resp, err := DoRequest[struct {
+	resp, err := doRequest[struct {
 		Domains []*Domain `json:"domains"`
 	}](c, ctx, req)
 	if err != nil {
@@ -215,21 +215,21 @@ func (c *Client) GetDomain(ctx context.Context, domain string) (*Domain, error) 
 	if err != nil {
 		return nil, err
 	}
-	return DoRequest[Domain](c, ctx, req)
+	return doRequest[Domain](c, ctx, req)
 }
 
 // CreateDomain creates a domain.
 func (c *Client) CreateDomain(ctx context.Context, domain CreateDomainRequest) (*Domain, error) {
 	req, err := c.getV1ReqBuilder().
 		SetMethod(http.MethodPost).
-		AddPath(DomainsPath).
+		AddPath(domainsPath).
 		SetHeaderContentTypeJson().
 		SetBodyJson(domain).
 		Build()
 	if err != nil {
 		return nil, err
 	}
-	return DoRequest[Domain](c, ctx, req)
+	return doRequest[Domain](c, ctx, req)
 }
 
 // UpdateDomain updates only fields explicitly set on update.
@@ -246,7 +246,7 @@ func (c *Client) UpdateDomain(ctx context.Context, domain string, update UpdateD
 	if err != nil {
 		return nil, err
 	}
-	return DoRequest[Domain](c, ctx, req)
+	return doRequest[Domain](c, ctx, req)
 }
 
 // GetDomainRecords retrieves the DNS records required for a domain.
@@ -259,7 +259,7 @@ func (c *Client) GetDomainRecords(ctx context.Context, domain string) (*DomainRe
 	if err != nil {
 		return nil, err
 	}
-	return DoRequest[DomainRecords](c, ctx, req)
+	return doRequest[DomainRecords](c, ctx, req)
 }
 
 // GetDomainDiagnostics runs and returns DNS diagnostics for a domain.
@@ -272,7 +272,7 @@ func (c *Client) GetDomainDiagnostics(ctx context.Context, domain string) (Domai
 	if err != nil {
 		return nil, err
 	}
-	diagnostics, err := DoRequest[DomainDiagnostics](c, ctx, req)
+	diagnostics, err := doRequest[DomainDiagnostics](c, ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -289,7 +289,7 @@ func (c *Client) ActivateDomain(ctx context.Context, domain string) (*Domain, er
 	if err != nil {
 		return nil, err
 	}
-	return DoRequest[Domain](c, ctx, req)
+	return doRequest[Domain](c, ctx, req)
 }
 
 // GetDomainUsage retrieves current message and storage usage for a domain.
@@ -302,5 +302,5 @@ func (c *Client) GetDomainUsage(ctx context.Context, domain string) (*DomainUsag
 	if err != nil {
 		return nil, err
 	}
-	return DoRequest[DomainUsage](c, ctx, req)
+	return doRequest[DomainUsage](c, ctx, req)
 }

@@ -2,7 +2,6 @@ package migadu
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 )
 
@@ -98,22 +97,22 @@ type UpdateMailboxRequest struct {
 	FooterHTMLBody        *string   `json:"footer_html_body,omitempty"`
 }
 
-// ListMailboxes lists all the mailboxes for the domain configured on the client.
+// ListMailboxes lists all mailboxes for a domain.
 // It returns the mailboxes and any error encountered.
-func (c *Client) ListMailboxes(ctx context.Context) ([]*Mailbox, error) {
-	builder, err := c.getConfiguredDomainReqBuilder()
+func (c *Client) ListMailboxes(ctx context.Context, domain string) ([]*Mailbox, error) {
+	builder, err := c.getDomainReqBuilder(domain)
 	if err != nil {
 		return nil, err
 	}
 	req, err := builder.
 		SetMethod(http.MethodGet).
-		AddPath(MailboxesPath).
+		AddPath(mailboxesPath).
 		Build()
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := DoRequest[struct {
+	resp, err := doRequest[struct {
 		Mailboxes []*Mailbox `json:"mailboxes,omitempty"`
 	}](c, ctx, req)
 	if err != nil {
@@ -124,114 +123,72 @@ func (c *Client) ListMailboxes(ctx context.Context) ([]*Mailbox, error) {
 
 // GetMailbox retrieves a single mailbox given its local part name.
 // It returns a pointer to a Mailbox struct and any error encountered.
-func (c *Client) GetMailbox(ctx context.Context, localPart string) (*Mailbox, error) {
-	builder, err := c.getConfiguredDomainReqBuilder()
+func (c *Client) GetMailbox(ctx context.Context, domain, localPart string) (*Mailbox, error) {
+	builder, err := c.getDomainReqBuilder(domain)
 	if err != nil {
 		return nil, err
 	}
 	req, err := builder.
 		SetMethod(http.MethodGet).
-		AddRestfulPath(MailboxesPath, localPart).
+		AddRestfulPath(mailboxesPath, localPart).
 		Build()
 	if err != nil {
 		return nil, err
 	}
-	return DoRequest[Mailbox](c, ctx, req)
-}
-
-// NewMailbox creates a new mailbox given the local part, a display name, an invitation email and an optional password.
-// An email will be sent to the email asking the user to set up a password. If a password is specified, the email will be used as the password recovery email.
-// It returns a pointer to a Mailbox struct and any error encountered.
-func (c *Client) NewMailbox(ctx context.Context, localPart string, displayName string, invitationEmail string, initialPassword string) (*Mailbox, error) {
-	request := CreateMailboxRequest{LocalPart: localPart, Name: displayName, PasswordRecoveryEmail: invitationEmail}
-	if initialPassword != "" {
-		request.PasswordMethod = "password"
-		request.Password = initialPassword
-	} else {
-		request.PasswordMethod = "invitation"
-	}
-	return c.CreateMailbox(ctx, request)
+	return doRequest[Mailbox](c, ctx, req)
 }
 
 // CreateMailbox creates a mailbox using all fields supported by the API.
-func (c *Client) CreateMailbox(ctx context.Context, mailbox CreateMailboxRequest) (*Mailbox, error) {
-	builder, err := c.getConfiguredDomainReqBuilder()
+func (c *Client) CreateMailbox(ctx context.Context, domain string, mailbox CreateMailboxRequest) (*Mailbox, error) {
+	builder, err := c.getDomainReqBuilder(domain)
 	if err != nil {
 		return nil, err
 	}
 	req, err := builder.
 		SetMethod(http.MethodPost).
-		AddPath(MailboxesPath).
+		AddPath(mailboxesPath).
 		SetHeaderContentTypeJson().
 		SetBodyJson(mailbox).
 		Build()
 	if err != nil {
 		return nil, err
 	}
-	return DoRequest[Mailbox](c, ctx, req)
+	return doRequest[Mailbox](c, ctx, req)
 }
 
-// UpdateMailbox updates a mailbox in place given a pointer to a Mailbox struct.
-// It returns a pointer to a new Mailbox struct and any error encountered.
-func (c *Client) UpdateMailbox(ctx context.Context, localPart string, mb *Mailbox) (*Mailbox, error) {
-	if mb == nil {
-		return nil, fmt.Errorf("mailbox is required")
-	}
-	update := UpdateMailboxRequest{
-		Name: &mb.Name, IsInternal: &mb.IsInternal, WildcardSender: &mb.WildcardSender,
-		MaySend: &mb.MaySend, MayReceive: &mb.MayReceive, MayAccessImap: &mb.MayAccessImap,
-		MayAccessPop3: &mb.MayAccessPop3, MayAccessManagesieve: &mb.MayAccessManagesieve,
-		PasswordRecoveryEmail: &mb.PasswordRecoveryEmail, AutorespondActive: &mb.AutorespondActive,
-		AutorespondBody: &mb.AutorespondBody, AutorespondExpiresOn: &mb.AutorespondExpiresOn,
-		AutorespondSubject: &mb.AutorespondSubject, Delegations: &mb.Delegations,
-		RemoveUponExpiry:  &mb.RemoveUponExpiry,
-		RecipientDenylist: &mb.RecipientDenylist, SenderAllowlist: &mb.SenderAllowlist,
-		SenderDenylist: &mb.SenderDenylist, SpamAction: &mb.SpamAction,
-		SpamAggressiveness: &mb.SpamAggressiveness, FooterActive: &mb.FooterActive,
-		FooterPlainBody: &mb.FooterPlainBody, FooterHTMLBody: &mb.FooterHTMLBody,
-	}
-	if mb.Password != "" {
-		update.Password = &mb.Password
-	}
-	if mb.ExpiresOn != "" {
-		update.ExpiresOn = &mb.ExpiresOn
-	}
-	return c.UpdateMailboxWithRequest(ctx, localPart, update)
-}
-
-// UpdateMailboxWithRequest updates only fields explicitly set on update.
-func (c *Client) UpdateMailboxWithRequest(ctx context.Context, localPart string, update UpdateMailboxRequest) (*Mailbox, error) {
-	builder, err := c.getConfiguredDomainReqBuilder()
+// UpdateMailbox updates only fields explicitly set on update.
+func (c *Client) UpdateMailbox(ctx context.Context, domain, localPart string, update UpdateMailboxRequest) (*Mailbox, error) {
+	builder, err := c.getDomainReqBuilder(domain)
 	if err != nil {
 		return nil, err
 	}
 	req, err := builder.
 		SetMethod(http.MethodPut).
-		AddRestfulPath(MailboxesPath, localPart).
+		AddRestfulPath(mailboxesPath, localPart).
 		SetHeaderContentTypeJson().
 		SetBodyJson(update).
 		Build()
 	if err != nil {
 		return nil, err
 	}
-	return DoRequest[Mailbox](c, ctx, req)
+	return doRequest[Mailbox](c, ctx, req)
 }
 
 // DeleteMailbox deletes a mailbox by local part.
 // It returns any error encountered.
-func (c *Client) DeleteMailbox(ctx context.Context, localPart string) error {
-	builder, err := c.getConfiguredDomainReqBuilder()
+func (c *Client) DeleteMailbox(ctx context.Context, domain, localPart string) error {
+	builder, err := c.getDomainReqBuilder(domain)
 	if err != nil {
 		return err
 	}
 	req, err := builder.
 		SetMethod(http.MethodDelete).
-		AddRestfulPath(MailboxesPath, localPart).
+		AddRestfulPath(mailboxesPath, localPart).
 		Build()
 	if err != nil {
 		return err
 	}
-	if _, err = DoRequest[struct{}](c, ctx, req); err != nil {
+	if _, err = doRequest[struct{}](c, ctx, req); err != nil {
 		return err
 	}
 	return nil
